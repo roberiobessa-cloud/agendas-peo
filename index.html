@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Agendas do Gestor — PEO</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --text:#1f2430; --muted:#6b7280;
+    --border:#e5e7eb; --accent:#2563eb; --accent-dark:#1d4ed8;
+    --danger:#dc2626; --ok:#16a34a; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{position:sticky;top:0;z-index:20;background:#111827;color:#fff;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  header .row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  header h1{font-size:18px;margin:0;font-weight:700;}
+  header .sub{font-size:12px;color:#9ca3af;margin-top:2px;display:flex;align-items:center;gap:6px;}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;}
+  .btn{border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+  .btn-admin{background:#374151;color:#fff;}
+  .btn-admin:hover{background:#4b5563;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:hover{background:var(--accent-dark);}
+  .btn-ghost{background:transparent;color:#374151;border:1px solid var(--border);}
+  .btn-ghost:hover{background:#f3f4f6;}
+  .btn-danger{background:#fee2e2;color:var(--danger);}
+  .btn-danger:hover{background:#fecaca;}
+  .btn-sm{padding:6px 10px;font-size:12px;border-radius:8px;}
+  .icon-btn{background:none;border:none;cursor:pointer;font-size:15px;padding:4px 6px;border-radius:6px;}
+  .icon-btn:hover{background:#eef0f3;}
+
+  .toolbar{max-width:1100px;margin:16px auto 0;padding:0 16px;}
+  .search{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-size:14px;background:#fff;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .chip{padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:13px;cursor:pointer;white-space:nowrap;color:#374151;}
+  .chip.active{background:var(--text);color:#fff;border-color:var(--text);}
+
+  .admin-bar{max-width:1100px;margin:12px auto 0;padding:10px 14px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;font-size:13px;color:#3730a3;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;}
+  .admin-bar .actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+  main{max-width:1100px;margin:0 auto;padding:16px;padding-bottom:60px;}
+  .area-section{margin-bottom:28px;}
+  .area-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .area-title{display:flex;align-items:center;gap:10px;}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+  .area-title h2{font-size:16px;margin:0;}
+  .area-title .sub{font-size:12px;color:var(--muted);}
+  .freq-block{margin-bottom:14px;}
+  .freq-label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:10px 0 8px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;position:relative;}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .badge-time{display:inline-block;background:#f3f4f6;color:#374151;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:7px;margin-bottom:6px;}
+  .card h3{font-size:14.5px;margin:2px 0 6px;}
+  .card p{font-size:13px;color:#4b5563;margin:0 0 8px;line-height:1.45;}
+  .participantes{font-size:12px;color:#374151;background:#f9fafb;border:1px dashed var(--border);border-radius:8px;padding:5px 8px;display:inline-block;}
+  .card-actions{display:flex;gap:4px;}
+  .empty{color:var(--muted);font-size:13px;padding:16px;text-align:center;}
+  .add-routine{border:1.5px dashed var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;min-height:60px;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer;background:#fff;}
+  .add-routine:hover{background:#eff6ff;}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(17,24,39,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:#fff;border-radius:16px;padding:20px;max-width:480px;width:100%;max-height:90vh;overflow:auto;}
+  .modal h3{margin-top:0;font-size:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;}
+  .field textarea{min-height:70px;resize:vertical;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .modal-note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;}
+
+  footer{max-width:1100px;margin:0 auto;padding:10px 16px 30px;color:var(--muted);font-size:11.5px;text-align:center;}
+  #fileImport{display:none;}
+  .spinner-full{position:fixed;inset:0;background:#f4f5f7;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);z-index:200;}
+  @media (max-width:520px){
+    header h1{font-size:16px;}
+    .grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="spinner-full" id="bootSpinner">Carregando agendas…</div>
+
+<header>
+  <div class="row">
+    <div>
+      <h1 id="appTitle">Agendas do Gestor</h1>
+      <div class="sub"><span class="live-dot"></span><span id="appUpdated">conectando…</span></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="openInfo()" style="color:#fff;border-color:#4b5563;">Sobre</button>
+      <button class="btn btn-admin" id="adminToggleBtn" onclick="onAdminButton()">Área do Administrador</button>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <input class="search" id="searchInput" placeholder="Buscar rotina, descrição ou participante…" oninput="render()">
+  <div class="chips" id="areaChips"></div>
+  <div class="chips" id="freqChips"></div>
+</div>
+
+<div class="admin-bar" id="adminBar" style="display:none;">
+  <span id="adminWhoami">🔓 Administrador</span>
+  <div class="actions">
+    <button class="btn btn-primary btn-sm" onclick="openAreaForm()">+ Nova área</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportData()">Exportar backup (JSON)</button>
+    <button class="btn btn-danger btn-sm" onclick="logoutAdmin()">Sair</button>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer>
+  Conteúdo digitalizado a partir do E-book PEO. Sincronizado em tempo real via Firebase — todos veem a mesma versão automaticamente.
+</footer>
+
+<!-- Modal: Admin login -->
+<div class="modal-backdrop" id="loginModal">
+  <div class="modal">
+    <h3>Área do administrador</h3>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="emailInput" placeholder="seu@clinicasim.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="passwordInput" placeholder="Digite a senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+    <div id="loginError" style="color:var(--danger);font-size:13px;display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('loginModal')">Cancelar</button>
+      <button class="btn btn-primary" id="loginBtn" onclick="doAdminLogin()">Entrar</button>
+    </div>
+    <div class="modal-note">Use o mesmo login do painel PEO (o mesmo e-mail/senha do sistema de avaliação). Só usuários com papel "admin" conseguem editar as agendas.</div>
+  </div>
+</div>
+
+<!-- Modal: Routine form -->
+<div class="modal-backdrop" id="routineModal">
+  <div class="modal">
+    <h3 id="routineModalTitle">Nova rotina</h3>
+    <div class="field">
+      <label>Frequência</label>
+      <select id="rFreq">
+        <option>Diária</option>
+        <option>Semanal</option>
+        <option>Quinzenal</option>
+        <option>Mensal</option>
+        <option>Trimestral</option>
+      </select>
+    </div>
+    <div class="field"><label>Horário</label><input id="rHorario" placeholder="Ex: 08:00 ou —"></div>
+    <div class="field"><label>Rotina</label><input id="rRotina" placeholder="Nome da rotina"></div>
+    <div class="field"><label>Descrição</label><textarea id="rDescricao" placeholder="O que fazer"></textarea></div>
+    <div class="field"><label>Participantes</label><input id="rParticipantes" placeholder="Ex: Coordenador + Líder"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('routineModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveRoutine()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Area form -->
+<div class="modal-backdrop" id="areaModal">
+  <div class="modal">
+    <h3 id="areaModalTitle">Nova área</h3>
+    <div class="field"><label>Nome da área</label><input id="aNome" placeholder="Ex: Recepção"></div>
+    <div class="field"><label>Subtítulo</label><input id="aSubtitulo" placeholder="Ex: Atendimento na recepção"></div>
+    <div class="field"><label>Cor</label><input id="aCor" type="color" value="#2563eb"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="aDeleteBtn" style="display:none;margin-right:auto;" onclick="deleteArea()">Excluir área</button>
+      <button class="btn btn-ghost" onclick="closeModal('areaModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveArea()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Info -->
+<div class="modal-backdrop" id="infoModal">
+  <div class="modal">
+    <h3>Sobre este sistema</h3>
+    <p style="font-size:13.5px;line-height:1.6;">Painel único (funciona no computador e no celular) com as agendas/rotinas que controlam a operação por área: Coordenador, Líderes, Pré, Pós, ASB e Posso Ajudar.</p>
+    <p style="font-size:13.5px;line-height:1.6;"><b>Visualização:</b> qualquer pessoa com o link vê as agendas normalmente, sem senha, sempre atualizadas em tempo real.</p>
+    <p style="font-size:13.5px;line-height:1.6;"><b>Administrador:</b> clique em "Área do Administrador" e entre com o mesmo login do painel PEO. Só quem tem papel "admin" pode editar.</p>
+    <p style="font-size:13.5px;line-height:1.6;">As edições são salvas direto no banco de dados (Firebase) — assim que o admin salva, todo mundo já vê a atualização, sem precisar republicar nada.</p>
+    <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal('infoModal')">Entendi</button></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+/* ======================= CONFIG (mesmo projeto Firebase do painel PEO) ======================= */
+const firebaseConfig = {
+  apiKey:            "AIzaSyAfz-evo3jddKNwVEqdrL2yBAn-FhuRxQQ",
+  authDomain:        "peo-clinica-sim.firebaseapp.com",
+  projectId:         "peo-clinica-sim",
+  storageBucket:     "peo-clinica-sim.firebasestorage.app",
+  messagingSenderId: "474441198245",
+  appId:             "1:474441198245:web:b96701264bdf77a5877b4c"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+const COLLECTION = "agendas_gestor";
+const FREQ_ORDER = ["Diária","Semanal","Quinzenal","Mensal","Trimestral"];
+const AREA_ORDER = ["coordenador","lideres","pre","pos","asb","posso-ajudar"];
+
+let DATA = { areas: [] };
+let state = { area: "todas", freq: "todas", isAdmin: false, editingRoutine: null, editingArea: null };
+let unsub = null;
+
+/* ======================= FIRESTORE: LEITURA EM TEMPO REAL ======================= */
+function startListening(){
+  unsub = db.collection(COLLECTION).onSnapshot(snap => {
+    const areas = [];
+    snap.forEach(doc => {
+      if (doc.id.startsWith("_")) return; // reservado (meta), ignora
+      areas.push({ id: doc.id, ...doc.data() });
+    });
+    areas.sort((a,b) => {
+      const ia = AREA_ORDER.indexOf(a.id), ib = AREA_ORDER.indexOf(b.id);
+      if (ia === -1 && ib === -1) return (a.nome||"").localeCompare(b.nome||"");
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+    DATA.areas = areas;
+    document.getElementById("appUpdated").textContent = "sincronizado em tempo real";
+    document.getElementById("bootSpinner").style.display = "none";
+    render();
+  }, err => {
+    document.getElementById("appUpdated").textContent = "erro ao conectar";
+    document.getElementById("bootSpinner").textContent = "Erro ao carregar: " + err.message;
+  });
+}
+
+/* ======================= SESSÃO ADMIN (Firebase Auth) ======================= */
+auth.onAuthStateChanged(async user => {
+  if (!user) { state.isAdmin = false; updateAdminUI(); render(); return; }
+  try {
+    const doc = await db.collection("users").doc(user.uid).get();
+    const role = doc.exists ? doc.data().role : null;
+    if (role === "admin") {
+      state.isAdmin = true;
+      document.getElementById("adminWhoami").textContent = "🔓 " + (doc.data().name || user.email);
+    } else {
+      state.isAdmin = false;
+      auth.signOut();
+      alert("Esse login não tem papel de administrador para as agendas.");
+    }
+  } catch(e) {
+    state.isAdmin = false;
+  }
+  updateAdminUI();
+  render();
+});
+
+function onAdminButton(){
+  if (state.isAdmin){ document.getElementById("adminBar").scrollIntoView({behavior:"smooth"}); return; }
+  document.getElementById("emailInput").value = "";
+  document.getElementById("passwordInput").value = "";
+  document.getElementById("loginError").style.display = "none";
+  openModal("loginModal");
+}
+
+async function doAdminLogin(){
+  const email = document.getElementById("emailInput").value.trim();
+  const password = document.getElementById("passwordInput").value;
+  const errEl = document.getElementById("loginError");
+  const btn = document.getElementById("loginBtn");
+  errEl.style.display = "none";
+  if (!email || !password){ errEl.textContent = "Preencha e-mail e senha."; errEl.style.display = "block"; return; }
+  btn.disabled = true; btn.textContent = "Entrando...";
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    closeModal("loginModal");
+  } catch(e) {
+    errEl.textContent =
+      e.code === "auth/wrong-password" ? "Senha incorreta." :
+      e.code === "auth/user-not-found" ? "Usuário não encontrado." :
+      e.code === "auth/invalid-email"  ? "E-mail inválido." :
+      e.code === "auth/too-many-requests" ? "Muitas tentativas. Aguarde e tente novamente." :
+      "Erro ao entrar: " + e.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false; btn.textContent = "Entrar";
+  }
+}
+
+function logoutAdmin(){
+  auth.signOut();
+}
+
+function updateAdminUI(){
+  document.getElementById("adminBar").style.display = state.isAdmin ? "flex" : "none";
+  document.getElementById("adminToggleBtn").textContent = state.isAdmin ? "Painel do administrador" : "Área do Administrador";
+}
+
+/* ======================= MODAL HELPERS ======================= */
+function openModal(id){ document.getElementById(id).classList.add("open"); }
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+function openInfo(){ openModal("infoModal"); }
+
+/* ======================= NAV / FILTROS ======================= */
+function renderNav(){
+  const areaChips = document.getElementById("areaChips");
+  const freqChips = document.getElementById("freqChips");
+
+  let html = `<div class="chip ${state.area==='todas'?'active':''}" onclick="setArea('todas')">Todas as áreas</div>`;
+  DATA.areas.forEach(a=>{
+    html += `<div class="chip ${state.area===a.id?'active':''}" onclick="setArea('${a.id}')">${escapeHtml(a.nome)}</div>`;
+  });
+  areaChips.innerHTML = html;
+
+  let fhtml = `<div class="chip ${state.freq==='todas'?'active':''}" onclick="setFreq('todas')">Todas as frequências</div>`;
+  FREQ_ORDER.forEach(f=>{
+    fhtml += `<div class="chip ${state.freq===f?'active':''}" onclick="setFreq('${f}')">${f}</div>`;
+  });
+  freqChips.innerHTML = fhtml;
+}
+function setArea(id){ state.area = id; render(); }
+function setFreq(f){ state.freq = f; render(); }
+
+/* ======================= RENDER PRINCIPAL ======================= */
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function matchesSearch(r, q){
+  if(!q) return true;
+  q = q.toLowerCase();
+  return [r.rotina, r.descricao, r.participantes, r.horario].join(" ").toLowerCase().includes(q);
+}
+
+function render(){
+  renderNav();
+  const q = document.getElementById("searchInput").value.trim();
+  const main = document.getElementById("main");
+  let areasToShow = DATA.areas.filter(a => state.area === "todas" || a.id === state.area);
+
+  if(areasToShow.length === 0){
+    main.innerHTML = `<div class="empty">Nenhuma área cadastrada ainda.</div>`;
+    return;
+  }
+
+  let html = "";
+  areasToShow.forEach(area=>{
+    const rotinas = area.rotinas || [];
+    let routines = rotinas.filter(r => (state.freq==="todas" || r.freq===state.freq) && matchesSearch(r,q));
+    if(routines.length===0 && (q || state.freq!=="todas") && !state.isAdmin) return;
+
+    html += `<section class="area-section">
+      <div class="area-head">
+        <div class="area-title">
+          <span class="dot" style="background:${area.cor||'#666'}"></span>
+          <div>
+            <h2>${escapeHtml(area.nome)}</h2>
+            <div class="sub">${escapeHtml(area.subtitulo||"")}</div>
+          </div>
+        </div>
+        ${state.isAdmin ? `<div class="card-actions">
+          <button class="icon-btn" title="Editar área" onclick="openAreaForm('${area.id}')">✏️</button>
+        </div>` : ""}
+      </div>`;
+
+    const freqsPresent = FREQ_ORDER.filter(f => routines.some(r=>r.freq===f));
+    if(freqsPresent.length===0 && routines.length===0){
+      html += `<div class="empty">Nenhuma rotina nesta área ainda.</div>`;
+    }
+    freqsPresent.forEach(f=>{
+      const list = routines.filter(r=>r.freq===f);
+      html += `<div class="freq-block"><div class="freq-label">${f}</div><div class="grid">`;
+      list.forEach(r=>{
+        const idx = rotinas.indexOf(r);
+        html += `<div class="card">
+          <div class="top">
+            <div><span class="badge-time">${escapeHtml(r.horario||"—")}</span>
+            <h3>${escapeHtml(r.rotina)}</h3></div>
+            ${state.isAdmin ? `<div class="card-actions">
+              <button class="icon-btn" onclick="openRoutineForm('${area.id}',${idx})">✏️</button>
+              <button class="icon-btn" onclick="deleteRoutine('${area.id}',${idx})">🗑️</button>
+            </div>` : ""}
+          </div>
+          <p>${escapeHtml(r.descricao)}</p>
+          <span class="participantes">👥 ${escapeHtml(r.participantes||"—")}</span>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+
+    if(state.isAdmin){
+      html += `<div class="add-routine" onclick="openRoutineForm('${area.id}')">+ Nova rotina em ${escapeHtml(area.nome)}</div>`;
+    }
+    html += `</section>`;
+  });
+
+  if(!html){
+    html = `<div class="empty">Nenhum resultado para a busca/filtro atual.</div>`;
+  }
+  main.innerHTML = html;
+}
+
+/* ======================= CRUD ROTINAS (grava direto no Firestore) ======================= */
+function openRoutineForm(areaId, idx){
+  state.editingArea = areaId;
+  state.editingRoutine = (idx===undefined) ? null : idx;
+  const area = DATA.areas.find(a=>a.id===areaId);
+  const r = (idx!==undefined && idx!==null) ? (area.rotinas||[])[idx] : null;
+  document.getElementById("routineModalTitle").textContent = r ? "Editar rotina" : "Nova rotina";
+  document.getElementById("rFreq").value = r?.freq || "Diária";
+  document.getElementById("rHorario").value = r?.horario || "";
+  document.getElementById("rRotina").value = r?.rotina || "";
+  document.getElementById("rDescricao").value = r?.descricao || "";
+  document.getElementById("rParticipantes").value = r?.participantes || "";
+  openModal("routineModal");
+}
+async function saveRoutine(){
+  const area = DATA.areas.find(a=>a.id===state.editingArea);
+  const routine = {
+    freq: document.getElementById("rFreq").value,
+    horario: document.getElementById("rHorario").value.trim() || "—",
+    rotina: document.getElementById("rRotina").value.trim(),
+    descricao: document.getElementById("rDescricao").value.trim(),
+    participantes: document.getElementById("rParticipantes").value.trim()
+  };
+  if(!routine.rotina){ alert("Informe o nome da rotina."); return; }
+  const rotinas = [...(area.rotinas||[])];
+  if(state.editingRoutine !== null && state.editingRoutine !== undefined){
+    rotinas[state.editingRoutine] = routine;
+  } else {
+    rotinas.push(routine);
+  }
+  try{
+    await db.collection(COLLECTION).doc(area.id).update({ rotinas });
+    closeModal("routineModal");
+  }catch(e){ alert("Erro ao salvar: " + e.message); }
+}
+async function deleteRoutine(areaId, idx){
+  if(!confirm("Excluir esta rotina para todo mundo?")) return;
+  const area = DATA.areas.find(a=>a.id===areaId);
+  const rotinas = [...(area.rotinas||[])];
+  rotinas.splice(idx,1);
+  try{
+    await db.collection(COLLECTION).doc(areaId).update({ rotinas });
+  }catch(e){ alert("Erro ao excluir: " + e.message); }
+}
+
+/* ======================= CRUD ÁREAS ======================= */
+function openAreaForm(areaId){
+  state.editingArea = areaId || null;
+  const area = areaId ? DATA.areas.find(a=>a.id===areaId) : null;
+  document.getElementById("areaModalTitle").textContent = area ? "Editar área" : "Nova área";
+  document.getElementById("aNome").value = area?.nome || "";
+  document.getElementById("aSubtitulo").value = area?.subtitulo || "";
+  document.getElementById("aCor").value = area?.cor || "#2563eb";
+  document.getElementById("aDeleteBtn").style.display = area ? "inline-block" : "none";
+  openModal("areaModal");
+}
+async function saveArea(){
+  const nome = document.getElementById("aNome").value.trim();
+  if(!nome){ alert("Informe o nome da área."); return; }
+  const subtitulo = document.getElementById("aSubtitulo").value.trim();
+  const cor = document.getElementById("aCor").value;
+  try{
+    if(state.editingArea){
+      await db.collection(COLLECTION).doc(state.editingArea).update({ nome, subtitulo, cor });
+    } else {
+      const id = nome.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || ("area-"+Date.now());
+      await db.collection(COLLECTION).doc(id).set({ nome, subtitulo, cor, rotinas: [] });
+    }
+    closeModal("areaModal");
+  }catch(e){ alert("Erro ao salvar área: " + e.message); }
+}
+async function deleteArea(){
+  if(!confirm("Excluir esta área e todas as suas rotinas para todo mundo?")) return;
+  try{
+    await db.collection(COLLECTION).doc(state.editingArea).delete();
+    if (state.area === state.editingArea) state.area = "todas";
+    closeModal("areaModal");
+  }catch(e){ alert("Erro ao excluir área: " + e.message); }
+}
+
+/* ======================= BACKUP (somente leitura) ======================= */
+function exportData(){
+  const payload = { exportadoEm: new Date().toISOString(), areas: DATA.areas };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "backup-agendas-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ======================= INIT ======================= */
+document.querySelectorAll(".modal-backdrop").forEach(m=>{
+  m.addEventListener("click", e=>{ if(e.target===m) m.classList.remove("open"); });
+});
+startListening();
+</script>
+</body>
+</html>
