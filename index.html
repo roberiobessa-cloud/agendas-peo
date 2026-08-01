@@ -288,10 +288,11 @@ auth.onAuthStateChanged(async user => {
     } else {
       state.isAdmin = false;
       auth.signOut();
-      alert("Esse login não tem papel de administrador para as agendas.");
+      alert("Esse login não tem papel de administrador para as agendas.\n[debug] uid=" + user.uid + " email=" + user.email + " docExists=" + doc.exists + " role=" + JSON.stringify(role));
     }
   } catch(e) {
     state.isAdmin = false;
+    alert("Erro ao verificar permissão de administrador.\n[debug] uid=" + user.uid + " email=" + user.email + " code=" + e.code + " msg=" + e.message);
   }
   updateAdminUI();
   render();
