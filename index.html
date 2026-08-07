@@ -108,6 +108,22 @@
     .area-head{padding:14px 16px;}
     .area-body{padding:14px 16px 16px;}
   }
+
+  /* ======================= EXPORTAÇÃO PDF (template offscreen) ======================= */
+  .pdf-page{position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:52px 48px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1a1f2b;}
+  .pdf-header{display:flex;align-items:flex-start;gap:16px;border-bottom:4px solid var(--pdf-color,#4f46e5);padding-bottom:20px;margin-bottom:6px;}
+  .pdf-header .pdf-dot{width:18px;height:18px;border-radius:50%;background:var(--pdf-color,#4f46e5);flex-shrink:0;margin-top:6px;}
+  .pdf-header h1{font-size:28px;margin:0;font-weight:800;letter-spacing:-.01em;}
+  .pdf-header .pdf-sub{font-size:14px;color:#6b7280;margin-top:5px;}
+  .pdf-meta{font-size:11px;color:#9aa2b1;text-align:right;margin:10px 0 24px;}
+  .pdf-freq{font-size:12.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--pdf-color,#4f46e5);display:inline-block;padding:6px 16px;border-radius:999px;margin:24px 0 14px;}
+  .pdf-row{border:1px solid #e6e9f0;border-left:5px solid var(--pdf-color,#4f46e5);border-radius:12px;padding:14px 18px;margin-bottom:12px;background:#fbfbfd;}
+  .pdf-row .pdf-time{display:inline-block;background:#eef0f6;color:#374151;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:7px;margin-bottom:8px;}
+  .pdf-row h3{font-size:16px;margin:2px 0 7px;font-weight:700;}
+  .pdf-row p{font-size:13px;color:#4b5563;margin:0 0 10px;line-height:1.55;}
+  .pdf-row .pdf-part{font-size:12px;font-weight:600;color:#4338ca;background:#eef0fe;border-radius:7px;padding:5px 11px;display:inline-block;}
+  .pdf-empty{color:#9aa2b1;font-size:13.5px;padding:20px 0;}
+  .pdf-footer{margin-top:40px;padding-top:16px;border-top:1px solid #e6e9f0;font-size:10.5px;color:#9aa2b1;text-align:center;}
 </style>
 </head>
 <body>
@@ -230,6 +246,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 /* ======================= CONFIG (mesmo projeto Firebase do painel PEO) ======================= */
 const firebaseConfig = {
@@ -400,9 +418,10 @@ function render(){
             <div class="sub">${escapeHtml(area.subtitulo||"")}</div>
           </div>
         </div>
-        ${state.isAdmin ? `<div class="card-actions">
-          <button class="icon-btn" title="Editar área" onclick="openAreaForm('${area.id}')">✏️</button>
-        </div>` : ""}
+        <div class="card-actions">
+          <button class="icon-btn" id="pdfBtn-${area.id}" title="Exportar esta agenda em PDF" onclick="exportAreaPDF('${area.id}')">📄</button>
+          ${state.isAdmin ? `<button class="icon-btn" title="Editar área" onclick="openAreaForm('${area.id}')">✏️</button>` : ""}
+        </div>
       </div>
       <div class="area-body">`;
 
@@ -532,6 +551,96 @@ function exportData(){
   a.href = url; a.download = "backup-agendas-" + new Date().toISOString().slice(0,10) + ".json";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* ======================= EXPORTAÇÃO EM PDF (por agenda) ======================= */
+function slugify(s){
+  return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "agenda";
+}
+
+function buildPdfContainer(area){
+  const cor = area.cor || "#4f46e5";
+  const rotinas = area.rotinas || [];
+  const div = document.createElement("div");
+  div.className = "pdf-page";
+  div.style.setProperty("--pdf-color", cor);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("pt-BR") + " às " + now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+
+  let html = `
+    <div class="pdf-header">
+      <span class="pdf-dot"></span>
+      <div>
+        <h1>${escapeHtml(area.nome)}</h1>
+        <div class="pdf-sub">${escapeHtml(area.subtitulo || "")}${area.subtitulo ? " — " : ""}Agenda do Gestor · PEO ClinicaSim</div>
+      </div>
+    </div>
+    <div class="pdf-meta">Gerado em ${dateStr} · ${rotinas.length} rotina${rotinas.length===1?"":"s"}</div>
+  `;
+
+  const freqsPresent = FREQ_ORDER.filter(f => rotinas.some(r => r.freq === f));
+  if(freqsPresent.length === 0){
+    html += `<div class="pdf-empty">Nenhuma rotina cadastrada nesta área ainda.</div>`;
+  }
+  freqsPresent.forEach(f=>{
+    html += `<div class="pdf-freq">${f}</div>`;
+    rotinas.filter(r=>r.freq===f).forEach(r=>{
+      html += `
+        <div class="pdf-row">
+          <span class="pdf-time">🕐 ${escapeHtml(r.horario || "—")}</span>
+          <h3>${escapeHtml(r.rotina)}</h3>
+          <p>${escapeHtml(r.descricao)}</p>
+          <span class="pdf-part">👥 ${escapeHtml(r.participantes || "—")}</span>
+        </div>
+      `;
+    });
+  });
+
+  html += `<div class="pdf-footer">Agendas do Gestor — PEO ClinicaSim · Documento gerado automaticamente a partir do sistema online</div>`;
+  div.innerHTML = html;
+  return div;
+}
+
+async function exportAreaPDF(areaId){
+  const area = DATA.areas.find(a => a.id === areaId);
+  if(!area) return;
+  const btn = document.getElementById("pdfBtn-" + areaId);
+  const originalLabel = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = "⏳"; }
+  let container = null;
+  try{
+    if(typeof html2canvas === "undefined" || typeof jspdf === "undefined"){
+      throw new Error("Biblioteca de PDF não carregou. Verifique sua conexão e tente novamente.");
+    }
+    container = buildPdfContainer(area);
+    document.body.appendChild(container);
+    await new Promise(r => setTimeout(r, 60));
+
+    const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+    const pdf = new jspdf.jsPDF("p", "mm", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgData = canvas.toDataURL("image/png");
+
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while(heightLeft > 0){
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    pdf.save("agenda-" + slugify(area.nome || area.id) + ".pdf");
+  } catch(e){
+    alert("Erro ao gerar PDF: " + e.message);
+  } finally {
+    if(container && container.parentNode) container.parentNode.removeChild(container);
+    if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
+  }
 }
 
 /* ======================= INIT ======================= */
